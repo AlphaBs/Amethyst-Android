@@ -53,6 +53,7 @@
     <string name="mcl_setting_renderer_gles2_4">Holy GL4ES—（仅支持 1.21.4 以下版本，速度较快）</string>
     <string name="mcl_setting_renderer_ng_gl4es">Krypton Wrapper -（全版本可用，速度较快）</string>
     <string name="mcl_setting_renderer_vulkan_kopper_zink">Kopper Zink（Vulkan）—（可用于所有版本，速度中等）</string>
+    <string name="mcl_setting_renderer_vulkan_zink">Zink (Vulkan) - (适用于所有版本，效率较低)</string>
     <string name="mcl_setting_renderer_mobileglues">SFPEW/MobileGlues (OpenGL ES) - (all versions, fast)</string>
     <string name="mcl_setting_renderer_ltw">LTW（OpenGL ES 3）—仅支持 1.17 以上版本</string>
     <string name="mcl_setting_veroption_release">正式版</string>
@@ -462,4 +463,5 @@
     <string name="import_modpack_hash">正在解压整合包文件… (%s MB/ %s MB)</string>
     <string name="import_modpack_json">正在读取整合包信息…</string>
     <string name="import_modpack_copy">正在将整合包文件复制到缓存… (%s MB/ %s MB)</string>
+    <string name="use_angle_checkbox">使用ANGLE（可能会提升FPS）</string>
 </resources>
