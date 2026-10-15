@@ -119,6 +119,23 @@ public class MinecraftDownloader {
         });
     }
 
+    /** 호스트가 선택한 실행 모드의 게임 파일을 준비한다. */
+    public void startForHost(Activity activity, String version,
+                             AsyncMinecraftDownloader.DoneListener listener) {
+        Tools.switchDemo(Tools.isDemoProfile(activity));
+        sExecutorService.execute(() -> {
+            try {
+                if (!Tools.isOnline(activity)) throw new IOException("No network connection");
+                downloadGame(activity, null, version);
+                listener.onDownloadDone();
+            } catch (Exception failure) {
+                listener.onDownloadFailed(failure);
+            } finally {
+                ProgressLayout.clearProgress(ProgressLayout.DOWNLOAD_MINECRAFT);
+            }
+        });
+    }
+
     /**
      * Download the game version.
      * @param activity Activity, used for automatic installation of JRE 17 if needed

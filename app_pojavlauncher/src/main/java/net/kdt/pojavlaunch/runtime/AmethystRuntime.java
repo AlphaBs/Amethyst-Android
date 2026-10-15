@@ -47,6 +47,25 @@ public final class AmethystRuntime {
         return account == null || !account.isMicrosoft || account.isDemo() ? null : account.username;
     }
 
+    public static String offlineAccountName(Context context) {
+        initialize(context);
+        MinecraftAccount account = PojavProfile.getCurrentProfileContent(context, null);
+        return account != null && account.isLocal() ? account.username : null;
+    }
+
+    public static void createOfflineAccount(Context context, String name) throws java.io.IOException {
+        if (!name.matches("[A-Za-z0-9_]{3,16}")) {
+            throw new IllegalArgumentException("Invalid offline player name");
+        }
+        initialize(context);
+        MinecraftAccount account = new MinecraftAccount();
+        account.username = name;
+        account.profileId = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name)
+                .getBytes(StandardCharsets.UTF_8)).toString();
+        account.save();
+        PojavProfile.setCurrentProfile(context, name);
+    }
+
     public static void openAccount(Activity activity) {
         activity.startActivity(new Intent(activity, RuntimeAccountActivity.class));
     }
@@ -102,7 +121,7 @@ public final class AmethystRuntime {
                             return;
                         }
                         ExtraCore.setValue(ExtraConstants.RELEASE_TABLE, versions);
-                        new MinecraftDownloader().start(activity, null, version,
+                        new MinecraftDownloader().startForHost(activity, version,
                                 new AsyncMinecraftDownloader.DoneListener() {
                             @Override public void onDownloadDone() { completion.onReady(); }
                             @Override public void onDownloadFailed(Throwable failure) {
