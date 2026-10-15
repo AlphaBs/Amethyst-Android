@@ -66,7 +66,7 @@ public final class AmethystRuntime {
     }
 
     public static void prepareGame(Activity activity, File directory, String version,
-                                   String renderer, int memoryMb, Completion completion) {
+                                   String renderer, int memoryMb, String[] gameArguments, Completion completion) {
         try {
             initialize(activity);
             if (!directory.isDirectory() && !directory.mkdirs()) {
@@ -84,6 +84,7 @@ public final class AmethystRuntime {
             profile.gameDir = directory.getAbsolutePath();
             profile.lastVersionId = version;
             profile.pojavRendererName = renderer;
+            profile.extraGameArguments = gameArguments == null ? null : gameArguments.clone();
             LauncherProfiles.mainProfileJson.profiles.put(profileId, profile);
             LauncherProfiles.write();
             LauncherPreferences.DEFAULT_PREF.edit()

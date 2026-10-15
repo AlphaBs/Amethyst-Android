@@ -455,6 +455,11 @@ public final class Tools {
         // Pre-process specific files
         disableSplash(gamedir);
         String[] launchArgs = getMinecraftClientArgs(minecraftAccount, versionInfo, gamedir);
+        if (minecraftProfile.extraGameArguments != null) {
+            List<String> arguments = new ArrayList<>(java.util.Arrays.asList(launchArgs));
+            java.util.Collections.addAll(arguments, minecraftProfile.extraGameArguments);
+            launchArgs = arguments.toArray(new String[0]);
+        }
 
         // Select the appropriate openGL version
         OldVersionsUtils.selectOpenGlVersion(versionInfo);

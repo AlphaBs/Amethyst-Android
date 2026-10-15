@@ -17,6 +17,7 @@ public class MinecraftProfile {
 	public String gameDir;
 	public String javaDir;
 	public String javaArgs;
+    public String[] extraGameArguments;
 	public String logConfig;
 	public boolean logConfigIsXML;
 	public String pojavRendererName;
@@ -51,6 +52,7 @@ public class MinecraftProfile {
 		gameDir = profile.gameDir;
 		javaDir = profile.javaDir;
 		javaArgs = profile.javaArgs;
+        extraGameArguments = profile.extraGameArguments;
 		logConfig = profile.logConfig;
 		logConfigIsXML = profile.logConfigIsXML;
 		pojavRendererName = profile.pojavRendererName;
