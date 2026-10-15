@@ -114,6 +114,7 @@ import java.util.Map;
 public final class Tools {
     public  static final float BYTE_TO_MB = 1024 * 1024;
     public static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
+    private static final String AMETHYST_MARKER_NAME = ".amethyst_private_file";
     public static String APP_NAME = "Amethyst";
 
     public static final Gson GLOBAL_GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -164,7 +165,7 @@ public final class Tools {
                 // Create a marker file to indicate to the app that files are stored privately in case it changes later.
                 // TODO: Provide a migration tool/button in case the files that are private can be moved later.
                 retFile = ctx.getFilesDir();
-                File markerFile = new File(retFile, ".amethyst_private_files");
+                File markerFile = new File(retFile, Tools.AMETHYST_MARKER_NAME);
                 try {
                     markerFile.createNewFile();
                 } catch (IOException e) {
@@ -172,7 +173,7 @@ public final class Tools {
                     throw new RuntimeException("Unexpected IOException while determining storage root!", e);
                 }
             } else {
-                File markerFile = new File(ctx.getFilesDir(), ".amethyst_private_files");
+                File markerFile = new File(ctx.getFilesDir(), AMETHYST_MARKER_NAME);
                 if(markerFile.exists())
                     return ctx.getFilesDir();
             }
