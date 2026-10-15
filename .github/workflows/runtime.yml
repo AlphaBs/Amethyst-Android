@@ -30,7 +30,7 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
       - run: bash scripts/languagelist_updater.sh
-      - run: ./gradlew :MioLibPatcher:test :app_pojavlauncher:testDebugUnitTest :app_pojavlauncher:assembleDebug --stacktrace
+      - run: ./gradlew :MioLibPatcher:test :app_pojavlauncher:testDebugUnitTest :app_pojavlauncher:assembleDebug :imgui_moulberry92:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: amethyst-runtime
