@@ -154,11 +154,30 @@ public final class Tools {
     public static String lwjglNativesDir = null;
     public static String[] sAsmVersion = null;
 
-
     private static File getPojavStorageRoot(Context ctx) {
         if(SDK_INT >= 29) {
-            return ctx.getExternalFilesDir(null);
-        }else{
+            File retFile = ctx.getExternalFilesDir(null);
+            if(retFile == null) {
+                // Android spec states for the ret of getExternalFilesDir:
+                // the absolute path to application-specific directory. May return null if shared storage is not currently available.
+                // Since this is the only shared storage location we can try, and we can't do shared, fall back to private directory.
+                // Create a marker file to indicate to the app that files are stored privately in case it changes later.
+                // TODO: Provide a migration tool/button in case the files that are private can be moved later.
+                retFile = ctx.getFilesDir();
+                File markerFile = new File(retFile, ".amethyst_private_files");
+                try {
+                    markerFile.createNewFile();
+                } catch (IOException e) {
+                    // Give up at this point.
+                    throw new RuntimeException("Unexpected IOException while determining storage root!", e);
+                }
+            } else {
+                File markerFile = new File(ctx.getFilesDir(), ".amethyst_private_files");
+                if(markerFile.exists())
+                    return ctx.getFilesDir();
+            }
+            return retFile;
+        } else {
             return new File(Environment.getExternalStorageDirectory(),"games/Amethyst");
         }
     }
