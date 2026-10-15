@@ -28,7 +28,7 @@
         android:resource="@xml/game_mode_config" />
     <application
         android:name=".PojavApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:allowNativeHeapPointerTagging="false"
         android:appCategory="game"
         android:hasFragileUserData="true"
@@ -52,11 +52,7 @@
             android:exported="true"
             android:label="@string/app_short_name"
             android:launchMode="singleTop">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".LauncherActivity"
@@ -119,7 +115,7 @@
 
         <provider
             android:name=".scoped.FolderProvider"
-            android:authorities="@string/storageProviderAuthorities"
+            android:authorities="${applicationId}.amethyst.documents"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">
@@ -135,6 +131,8 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="This application is intended to run a 3rd-party piece of software which cannot be managed using the activity's saved instance state. This service is used for background persistence of this piece of software."/>
         </service>
+        <activity android:name=".runtime.RuntimeAccountActivity"
+            android:exported="false" android:theme="@style/AppTheme" />
     </application>
     <queries>
         <package android:name="net.kdt.pojavlaunch.ffmpeg"/>

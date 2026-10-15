@@ -129,9 +129,10 @@ public final class Tools {
 
     // New since 3.3.1
     public static String DIR_ACCOUNT_NEW;
-    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/Amethyst";
+    public static String DIR_GAME_HOME = null;
     public static String DIR_GAME_NEW;
     public static String GAME_PROFILES_FILE;
+    private static String hostGameDirectory;
 
     // New since 3.0.0
     public static String DIRNAME_HOME_JRE = "lib";
@@ -156,11 +157,7 @@ public final class Tools {
 
 
     private static File getPojavStorageRoot(Context ctx) {
-        if(SDK_INT >= 29) {
-            return ctx.getExternalFilesDir(null);
-        }else{
-            return new File(Environment.getExternalStorageDirectory(),"games/Amethyst");
-        }
+        return ctx.getExternalFilesDir(null);
     }
 
     /**
@@ -212,7 +209,9 @@ public final class Tools {
     public static void initStorageConstants(Context ctx){
         initEarlyConstants(ctx);
         DIR_GAME_HOME = getPojavStorageRoot(ctx).getAbsolutePath();
-        DIR_GAME_NEW = DIR_GAME_HOME + "/.minecraft";
+        hostGameDirectory = ctx.getSharedPreferences("amethyst_runtime", Context.MODE_PRIVATE)
+                .getString("gameDirectory", null);
+        DIR_GAME_NEW = hostGameDirectory == null ? DIR_GAME_HOME + "/.minecraft" : hostGameDirectory;
         DIR_HOME_VERSION = DIR_GAME_NEW + "/versions";
         DIR_HOME_LIBRARY = DIR_GAME_NEW + "/libraries";
         DIR_HOME_CRASH = DIR_GAME_NEW + "/crash-reports";
@@ -1812,7 +1811,7 @@ public final class Tools {
         if(isDemo) {
             DIR_GAME_NEW = DIR_DATA + "/demo/.minecraft";
         } else {
-            DIR_GAME_NEW = DIR_GAME_HOME + "/.minecraft";
+            DIR_GAME_NEW = hostGameDirectory == null ? DIR_GAME_HOME + "/.minecraft" : hostGameDirectory;
         }
         DIR_HOME_VERSION = DIR_GAME_NEW + "/versions";
         DIR_HOME_LIBRARY = DIR_GAME_NEW + "/libraries";

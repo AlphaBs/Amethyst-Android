@@ -1,0 +1,3 @@
+-keep class net.kdt.pojavlaunch.** { *; }
+-keep class org.lwjgl.** { *; }
+-keep class org.libsdl.** { *; }

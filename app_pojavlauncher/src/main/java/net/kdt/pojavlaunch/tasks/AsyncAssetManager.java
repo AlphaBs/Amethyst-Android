@@ -112,6 +112,21 @@ public class AsyncAssetManager {
     }
     // Piggybacks off of the java modules extracting later to use their version files for update checks
     // This is indeed prone to breaking.
+    /** 호스트가 게임 실행 전에 필요한 구성 요소를 동기적으로 준비한다. */
+    public static void prepareForHost(Context context) throws IOException {
+        Tools.copyAssetFile(context, "default.json", Tools.CTRLMAP_PATH, false);
+        Tools.copyAssetFile(context, "resolv.conf", Tools.DIR_DATA, false);
+        unpackComponent(context, "caciocavallo", false);
+        unpackComponent(context, "caciocavallo17", false);
+        unpackLwjglNatives(context);
+        unpackComponent(context, "lwjgl3/3.3.3", false);
+        unpackComponent(context, "lwjgl3/3.4.1", false);
+        unpackComponent(context, "security", true);
+        unpackComponent(context, "arc_dns_injector", true);
+        unpackComponent(context, "MioLibPatcher", true);
+        unpackComponent(context, "forge_installer", true);
+    }
+
     private static void unpackLwjglNatives(Context ctx) throws IOException {
         AssetManager am = ctx.getAssets();
         String rootDir = Tools.DIR_DATA;

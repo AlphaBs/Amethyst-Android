@@ -104,6 +104,11 @@ public class MicrosoftLoginFragment extends Fragment {
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             if(url.startsWith("ms-xal-00000000402b5328")) {
                 // Should be captured by the activity to kill the fragment and get
+                if (requireActivity() instanceof net.kdt.pojavlaunch.runtime.RuntimeAccountActivity) {
+                    ((net.kdt.pojavlaunch.runtime.RuntimeAccountActivity) requireActivity())
+                            .completeAuthorization(Uri.parse(url));
+                    return true;
+                }
                 ExtraCore.setValue(ExtraConstants.MICROSOFT_LOGIN_TODO, Uri.parse(url));
                 Toast.makeText(view.getContext(), "Login started !", Toast.LENGTH_SHORT).show();
                 Tools.backToMainMenu(requireActivity());
