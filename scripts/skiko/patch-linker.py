@@ -21,3 +21,20 @@ replacement = '''                // Android에서도 skottie가 참조하는 정
 if text.count(original) != 1:
     raise SystemExit("Pinned Skiko Android linker configuration does not match")
 configuration.write_text(text.replace(original, replacement))
+
+# 네이티브 빌드에 필요 없는 과거 사내 배포 플러그인은 폐쇄된 저장소를 참조한다.
+settings = source / "skiko/settings.gradle.kts"
+text = settings.read_text()
+text = text.replace('            maven("https://maven.pkg.jetbrains.space/public/p/compose/internal")\n', '')
+text = text.replace('            maven("https://maven.pkg.jetbrains.space/public/p/space/maven")\n', '')
+text = text.replace('            classpath("org.jetbrains.compose.internal.build-helpers:publishing:0.1.18")\n', '')
+text = text.replace('include("ci")\n', '')
+settings.write_text(text)
+
+build = source / "skiko/build.gradle.kts"
+text = build.read_text()
+text = text.replace('import org.jetbrains.compose.internal.publishing.MavenCentralProperties\n', '')
+start = text.index('val mavenCentral = MavenCentralProperties(project)')
+end = text.index('tasks.withType<AbstractTestTask>', start)
+text = text[:start] + text[end:]
+build.write_text(text)
