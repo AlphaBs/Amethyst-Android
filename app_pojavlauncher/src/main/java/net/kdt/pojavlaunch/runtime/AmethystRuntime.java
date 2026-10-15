@@ -119,6 +119,16 @@ public final class AmethystRuntime {
         }
     }
 
+    public static java.util.Map<String, String> renderers(Context context) {
+        initialize(context);
+        Tools.RenderersList available = Tools.getCompatibleRenderers(context);
+        java.util.Map<String, String> result = new java.util.LinkedHashMap<>();
+        for (int index = 0; index < available.rendererIds.size(); index++) {
+            result.put(available.rendererIds.get(index), available.rendererDisplayNames[index]);
+        }
+        return result;
+    }
+
     public static boolean isGameRunning(Context context) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         java.util.List<ActivityManager.RunningAppProcessInfo> processes = manager.getRunningAppProcesses();
