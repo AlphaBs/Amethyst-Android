@@ -503,6 +503,24 @@ public final class Tools {
         }
         javaArgList.add("-Djava.library.path="+javaLibraryPath);
 
+        String skikoArchitecture = null;
+        if (DEVICE_ARCHITECTURE == Architecture.ARCH_ARM64) {
+            skikoArchitecture = "arm64";
+        } else if (DEVICE_ARCHITECTURE == Architecture.ARCH_X86_64) {
+            skikoArchitecture = "x64";
+        }
+        if (skikoArchitecture != null) {
+            File skikoLibrary = new File(
+                    gameNativeDirectory,
+                    "libskiko-linux-" + skikoArchitecture + ".so"
+            );
+            if (skikoLibrary.isFile()) {
+                // AWT 바인딩의 리소스 추출 대신 Android용 외부 네이티브를 선택한다.
+                javaArgList.add("-Dskiko.library.path=" + gameNativeDirectory.getAbsolutePath());
+                Logger.appendToLog("Skiko native: " + skikoLibrary);
+            }
+        }
+
         javaArgList.addAll(Arrays.asList(getMinecraftJVMArgs(versionId, gamedir)));
         javaArgList.add("-cp"); javaArgList.add(launchClasspath);
 
