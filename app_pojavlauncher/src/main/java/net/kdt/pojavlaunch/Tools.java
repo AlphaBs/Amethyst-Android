@@ -71,6 +71,7 @@ import net.kdt.pojavlaunch.utils.DownloadUtils;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.utils.GLInfoUtils;
 import net.kdt.pojavlaunch.utils.JREUtils;
+import net.kdt.pojavlaunch.utils.GameNativeLibraries;
 import net.kdt.pojavlaunch.utils.JSONUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.utils.OldVersionsUtils;
@@ -480,7 +481,15 @@ public final class Tools {
         }
 
         File versionSpecificNativesDir = new File(Tools.DIR_CACHE, "natives/"+versionId);
+        File gameNativeDirectory = GameNativeLibraries.prepare(
+                gamedir,
+                new File(Tools.DIR_DATA),
+                archAsStringAndroid(DEVICE_ARCHITECTURE)
+        );
+        Logger.appendToLog("Game native libraries: " + gameNativeDirectory);
         StringBuilder javaLibraryPath = new StringBuilder();
+        javaLibraryPath.append(gameNativeDirectory.getAbsolutePath());
+        javaLibraryPath.append(File.pathSeparator);
 
         // Add which lwjgl natives to use into classpath
         javaLibraryPath.append(lwjglNativesDir).append(":");
@@ -510,9 +519,16 @@ public final class Tools {
         // imgui-java set library name to use. This because Axiom uses a fork with different library naming
         // logic that doesn't seem to appear in the main repository. I'm not gonna work with that.
         javaArgList.add("-Dimgui.library.name=imgui-java");
-        // Moulberry 1.92는 기존 ImGui 1.86과 ABI가 달라 전용 네이티브를 선택한다.
-        javaArgList.add("-Damethyst.imgui.moulberry92.path="
-                + Tools.NATIVE_LIB_DIR + "/libimgui-moulberry92.so");
+        // Moulberry 네이티브는 APK 대신 모드팩별 외부 파일을 사용한다.
+        for (int imguiVersion : new int[] {92, 90}) {
+            File imguiLibrary = new File(
+                    gameNativeDirectory,
+                    "libimgui-moulberry" + imguiVersion + ".so"
+            );
+            Logger.appendToLog("ImGui " + imguiVersion + " native: " + imguiLibrary);
+            javaArgList.add("-Damethyst.imgui.moulberry" + imguiVersion + ".path="
+                    + imguiLibrary.getAbsolutePath());
+        }
         // We use an abomination to support all DH versions with a single library.
         javaArgList.add("-DZstdNativePath="+Tools.NATIVE_LIB_DIR+"/libzstd-jni-1.5.7-6-dhcompat.so");
         // We only ever reach this point when user has already used the force run switch

@@ -167,6 +167,13 @@ public class JREUtils {
                 .append("/").append(Tools.DIRNAME_HOME_JRE)
                 .append("/jli:").append(jreHome).append("/").append(Tools.DIRNAME_HOME_JRE)
                 .append(":");
+        // 같은 폴더의 다른 .so에 대한 네이티브 의존성도 찾을 수 있게 한다.
+        File gameNativeDirectory = new File(
+                Tools.DIR_DATA,
+                "game-natives/" + archAsStringAndroid(getDeviceArchitecture())
+        );
+        ldLibraryPath.append(gameNativeDirectory.getAbsolutePath());
+        ldLibraryPath.append(File.pathSeparator);
         ldLibraryPath.append("/system/").append(libName).append(":")
                 .append("/vendor/").append(libName).append(":")
                 .append("/vendor/").append(libName).append("/hw:")
