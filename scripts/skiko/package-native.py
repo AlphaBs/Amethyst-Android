@@ -9,7 +9,7 @@ import sys
 source = pathlib.Path(sys.argv[1])
 arch = os.environ["NATIVE_ARCH"]
 abi = os.environ["NATIVE_ABI"]
-library = source / f"skiko/build/out/link/release-android-jvm-{arch}/libskiko-android-{arch}.so"
+library = source / f"skiko/build/out/link/Release-android-jvm-{arch}/libskiko-android-{arch}.so"
 if not library.is_file():
     raise SystemExit(f"Native output missing: {library}")
 undefined = subprocess.check_output(["nm", "-D", "--undefined-only", library], text=True)
@@ -19,6 +19,7 @@ symbols = subprocess.check_output(["nm", "-D", "--defined-only", library], text=
 for symbol in (
     "Java_org_jetbrains_skia_DirectContextKt__1nMakeGL",
     "Java_org_jetbrains_skia_ImageFilterKt__1nMakeBlur",
+    "Java_org_jetbrains_skiko_SystemThemeHelper_getCurrentSystemTheme",
 ):
     if symbol not in symbols:
         raise SystemExit(f"Required JNI symbol missing: {symbol}")
@@ -47,3 +48,10 @@ metadata = {
 }
 (output / "build-info.json").write_text(json.dumps(metadata, indent=2) + "\n")
 print("Verified Android Skiko:", destination)
+
+compatibility = pathlib.Path(__file__).parent
+rebuild = output / "compatibility-source"
+rebuild.mkdir(exist_ok=True)
+for name in ("AndroidSystemTheme.cc", "patch-linker.py", "package-native.py", "README.md"):
+    shutil.copyfile(compatibility / name, rebuild / name)
+shutil.copyfile(compatibility.parent.parent / "LICENSE", rebuild / "LICENSE-LGPL-3.0")

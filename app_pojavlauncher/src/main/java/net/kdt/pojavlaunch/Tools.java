@@ -517,6 +517,15 @@ public final class Tools {
             if (skikoLibrary.isFile()) {
                 // AWT 바인딩의 리소스 추출 대신 Android용 외부 네이티브를 선택한다.
                 javaArgList.add("-Dskiko.library.path=" + gameNativeDirectory.getAbsolutePath());
+                int nightMode = activity.getResources().getConfiguration().uiMode
+                        & Configuration.UI_MODE_NIGHT_MASK;
+                String systemTheme = "unknown";
+                if (nightMode == Configuration.UI_MODE_NIGHT_YES) {
+                    systemTheme = "dark";
+                } else if (nightMode == Configuration.UI_MODE_NIGHT_NO) {
+                    systemTheme = "light";
+                }
+                javaArgList.add("-Damethyst.android.systemTheme=" + systemTheme);
                 Logger.appendToLog("Skiko native: " + skikoLibrary);
             }
         }

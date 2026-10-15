@@ -22,7 +22,7 @@ if text.count(original) != 1:
     raise SystemExit("Pinned Skiko Android linker configuration does not match")
 configuration.write_text(text.replace(original, replacement))
 
-# 네이티브 빌드에 필요 없는 과거 사내 배포 플러그인은 폐쇄된 저장소를 참조한다.
+# 네이티브 빌드에 필요 없는 과거 사내 배포 플러그인은 현재 접근되지 않는 저장소를 참조한다.
 settings = source / "skiko/settings.gradle.kts"
 text = settings.read_text()
 text = text.replace('            maven("https://maven.pkg.jetbrains.space/public/p/compose/internal")\n', '')
@@ -38,3 +38,9 @@ start = text.index('val mavenCentral = MavenCentralProperties(project)')
 end = text.index('tasks.withType<AbstractTestTask>', start)
 text = text[:start] + text[end:]
 build.write_text(text)
+
+# AWT 바인딩의 시스템 테마 조회를 Android 런처가 제공한 값에 연결한다.
+compatibility = pathlib.Path(__file__).with_name("AndroidSystemTheme.cc")
+destination = source / "skiko/src/awtMain/cpp/android/AndroidSystemTheme.cc"
+destination.parent.mkdir(parents=True, exist_ok=True)
+destination.write_bytes(compatibility.read_bytes())
