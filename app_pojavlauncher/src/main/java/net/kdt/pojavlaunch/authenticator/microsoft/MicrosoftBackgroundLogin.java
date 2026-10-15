@@ -45,6 +45,9 @@ public class MicrosoftBackgroundLogin {
 
     private final boolean mIsRefresh;
     private final String mAuthCode;
+    private String microsoftAccessToken;
+    private volatile boolean cancelled;
+    private volatile java.util.concurrent.Future<?> loginTask;
     private static final Map<Long, Integer> XSTS_ERRORS;
     static {
         XSTS_ERRORS = new ArrayMap<>();
@@ -68,22 +71,61 @@ public class MicrosoftBackgroundLogin {
         mAuthCode = authCode;
     }
 
+    /** Device Code로 받은 Microsoft 토큰에 기존 Xbox/Minecraft 교환을 적용한다. */
+    public static MicrosoftBackgroundLogin fromMicrosoftTokens(MicrosoftDeviceCodeLogin.Tokens tokens) {
+        MicrosoftBackgroundLogin login = new MicrosoftBackgroundLogin(false, "");
+        login.microsoftAccessToken = tokens.accessToken;
+        login.msRefreshToken = tokens.refreshToken;
+        return login;
+    }
+
+    public void cancel() {
+        cancelled = true;
+        java.util.concurrent.Future<?> task = loginTask;
+        if (task != null) {
+            task.cancel(true);
+        }
+    }
+
     /** Performs a full login, calling back listeners appropriately  */
     public void performLogin(@Nullable final ProgressListener progressListener,
                              @Nullable final DoneListener doneListener,
                              @Nullable final ErrorListener errorListener){
-        sExecutorService.execute(() -> {
+        loginTask = sExecutorService.submit(() -> {
             try {
+                if (cancelled) {
+                    return;
+                }
                 notifyProgress(progressListener, 1);
-                String accessToken = acquireAccessToken(mIsRefresh, mAuthCode);
+                String accessToken;
+                if (microsoftAccessToken != null) {
+                    accessToken = microsoftAccessToken;
+                } else {
+                    accessToken = acquireAccessToken(mIsRefresh, mAuthCode);
+                }
                 notifyProgress(progressListener, 2);
+                if (cancelled) {
+                    return;
+                }
                 String xboxLiveToken = acquireXBLToken(accessToken);
                 notifyProgress(progressListener, 3);
+                if (cancelled) {
+                    return;
+                }
                 String[] xsts = acquireXsts(xboxLiveToken);
                 notifyProgress(progressListener, 4);
+                if (cancelled) {
+                    return;
+                }
                 String mcToken = acquireMinecraftToken(xsts[0], xsts[1]);
                 notifyProgress(progressListener, 5);
+                if (cancelled) {
+                    return;
+                }
                 checkMcProfile(mcToken);
+                if (cancelled) {
+                    return;
+                }
                 fetchOwnedItems(mcToken);
 
                 if (!hasProfile && doesOwnGame) {
@@ -105,19 +147,34 @@ public class MicrosoftBackgroundLogin {
                 acc.msaRefreshToken = msRefreshToken;
                 acc.expiresAt = expiresAt;
                 acc.updateSkinFace();
+                if (cancelled || Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 acc.save();
 
                 if(doneListener != null) {
                     MinecraftAccount finalAcc = acc;
-                    Tools.runOnUiThread(() -> doneListener.onLoginDone(finalAcc));
+                    Tools.runOnUiThread(() -> {
+                        if (!cancelled) {
+                            doneListener.onLoginDone(finalAcc);
+                        }
+                    });
                 }
 
             }catch (Exception e){
+                if (cancelled) {
+                    return;
+                }
                 Log.e("MicroAuth", "Exception thrown during authentication", e);
                 if(errorListener != null)
-                    Tools.runOnUiThread(() -> errorListener.onLoginError(e));
+                    Tools.runOnUiThread(() -> {
+                        if (!cancelled) {
+                            errorListener.onLoginError(e);
+                        }
+                    });
+            } finally {
+                ProgressLayout.clearProgress(ProgressLayout.AUTHENTICATE_MICROSOFT);
             }
-            ProgressLayout.clearProgress(ProgressLayout.AUTHENTICATE_MICROSOFT);
         });
     }
 
@@ -125,16 +182,13 @@ public class MicrosoftBackgroundLogin {
         URL url = new URL(authTokenUrl);
 
         String formData = convertToFormData(
-                "client_id", "00000000402b5328",
+                "client_id", MicrosoftDeviceCodeLogin.CLIENT_ID,
                 isRefresh ? "refresh_token" : "code", authcode,
                 "grant_type", isRefresh ? "refresh_token" : "authorization_code",
                 "redirect_url", "https://login.live.com/oauth20_desktop.srf",
-                "scope", "service::user.auth.xboxlive.com::MBI_SSL"
+                "scope", MicrosoftDeviceCodeLogin.SCOPE
         );
 
-        Log.i("MicroAuth", formData);
-
-        //да пошла yf[eq1 она ваша джава 11
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
         conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
         conn.setRequestProperty("charset", "utf-8");
@@ -143,6 +197,8 @@ public class MicrosoftBackgroundLogin {
         conn.setUseCaches(false);
         conn.setDoInput(true);
         conn.setDoOutput(true);
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(30000);
         conn.connect();
         try(OutputStream wr = conn.getOutputStream()) {
             wr.write(formData.getBytes(StandardCharsets.UTF_8));
@@ -173,6 +229,8 @@ public class MicrosoftBackgroundLogin {
         String req = data.toString();
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
         setCommonProperties(conn, req);
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(30000);
         conn.connect();
 
         try(OutputStream wr = conn.getOutputStream()) {
@@ -201,10 +259,11 @@ public class MicrosoftBackgroundLogin {
         data.put("TokenType", "JWT");
 
         String req = data.toString();
-        Log.i("MicroAuth", req);
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
         setCommonProperties(conn, req);
         Log.i("MicroAuth", conn.getRequestMethod());
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(30000);
         conn.connect();
 
         try(OutputStream wr = conn.getOutputStream()) {
@@ -241,6 +300,8 @@ public class MicrosoftBackgroundLogin {
         String req = data.toString();
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
         setCommonProperties(conn, req);
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(30000);
         conn.connect();
 
         try(OutputStream wr = conn.getOutputStream()) {
@@ -261,16 +322,23 @@ public class MicrosoftBackgroundLogin {
 
     private void fetchOwnedItems(String mcAccessToken) throws IOException {
         // We only need to do this if user does not have a profile/username yet
-        if (hasProfile) return;
+        if (hasProfile) {
+            return;
+        }
         URL url = new URL(mcStoreUrl);
         String s = "";
 
         // For some reason, minecraftservices APIs are significantly more unreliable
         // Automatically retry because the user gets annoyed when they have to log in again
         for (int retryCount = 0; retryCount < 5; ++retryCount) {
+            if (cancelled) {
+                throw new java.util.concurrent.CancellationException();
+            }
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", "Bearer " + mcAccessToken);
             conn.setUseCaches(false);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
             conn.connect();
             if (conn.getResponseCode() >= 200 && conn.getResponseCode() < 300) {
                 s = Tools.read(conn.getInputStream());
@@ -280,7 +348,10 @@ public class MicrosoftBackgroundLogin {
                 throw getResponseThrowable(conn);
             }
             try { Thread.sleep(500L * (1L << retryCount)); // 0.5s, 1s, 2s, 4s, 8s
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new java.util.concurrent.CancellationException();
+            }
         }
         try {
             String jwtSignature = new JSONObject(s).getString("signature");
@@ -328,9 +399,14 @@ public class MicrosoftBackgroundLogin {
         // For some reason, minecraftservices APIs are significantly more unreliable
         // Automatically retry because the user gets annoyed when they have to log in again
         for (int retryCount = 0; retryCount < 5; ++retryCount) {
+            if (cancelled) {
+                throw new java.util.concurrent.CancellationException();
+            }
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
             conn.setRequestProperty("Authorization", "Bearer " + mcAccessToken);
             conn.setUseCaches(false);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
             conn.connect();
 
             if(conn.getResponseCode() >= 200 && conn.getResponseCode() < 300) {
@@ -361,7 +437,10 @@ public class MicrosoftBackgroundLogin {
                 throw getResponseThrowable(conn);
             }
             try { Thread.sleep(500L * (1L << retryCount)); // 0.5s, 1s, 2s, 4s, 8s
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new java.util.concurrent.CancellationException();
+            }
         }
     }
 

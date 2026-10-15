@@ -9,3 +9,13 @@ Build with JDK 17, Android SDK 35, NDK 27.3.13750724 and CMake 3.22.1. Default A
 Library extraction and runtime integration are in progress. A successful build alone does not prove game startup or LGPL relinking compliance. Hosts must provide applicable notices, library source and a verified relinking mechanism/materials when distributing a combined application.
 
 Hosts may explicitly create an offline profile for local singleplayer testing with `createOfflineAccount`. This does not produce a Microsoft session. The host must keep offline singleplayer arguments separate from authenticated multiplayer. `prepareGame` downloads public version dependencies for the selected profile without requiring the upstream launcher home screen.
+
+## Microsoft Device Code sign-in
+
+Call `openDeviceCodeAccount(Activity)` to display a Microsoft verification address and user code. The user signs in using their own PC/mobile browser. The library polls for authorization, exchanges the Microsoft token through Xbox Live/XSTS and Minecraft services, saves the account, and selects it on success. Hosts continue to use `accountName` and `refreshAccount`; FISH/server policies are not involved. `openAccount` retains the upstream WebView flow for existing callers.
+
+This uses the existing upstream Xbox OAuth client ID and scope with `login.live.com/oauth20_connect.srf` and `oauth20_token.srf`. Device grants and refresh grants use the same client/scope. No client secret is embedded. The existing client was checked against Microsoft's live device endpoint: code issuance succeeded. End-to-end account authorization/refresh still requires a user with Minecraft Java Edition.
+
+The worker respects the server interval, adds five seconds after `slow_down`, backs off on connection timeout, and stops on expiry, denial or cancellation. Closing the Activity cancels polling; opening the browser keeps it running. Codes/tokens and token request bodies are not logged. The displayed code is transient and is never stored in the account file. Unit tests use a local HTTP server and a virtual clock, without real accounts.
+
+Protocol references: [Microsoft device authorization](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code), [RFC 8628](https://www.rfc-editor.org/rfc/rfc8628#section-3.5).

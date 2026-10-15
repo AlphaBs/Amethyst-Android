@@ -70,6 +70,10 @@ public final class AmethystRuntime {
         activity.startActivity(new Intent(activity, RuntimeAccountActivity.class));
     }
 
+    public static void openDeviceCodeAccount(Activity activity) {
+        activity.startActivity(new Intent(activity, RuntimeDeviceCodeActivity.class));
+    }
+
     public static void refreshAccount(Activity activity, Completion completion) {
         initialize(activity);
         MinecraftAccount account = PojavProfile.getCurrentProfileContent(activity, null);
