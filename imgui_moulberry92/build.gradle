@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'org.angelauramc.imgui.moulberry92'
+    compileSdk 35
+    ndkVersion '27.3.13750724'
+
+    defaultConfig {
+        minSdk 26
+        ndk {
+            abiFilters.addAll(
+                providers.gradleProperty('runtimeAbis').getOrElse('arm64-v8a,x86_64').split(',')
+            )
+        }
+        externalNativeBuild {
+            cmake {
+                arguments "-DIMGUI_JNI_DIR=${layout.buildDirectory.dir('generated/jni').get().asFile}"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+}
+
+// JNI는 모드와 같은 고정 소스의 생성기에서 만들고, NDK 컴파일은 Android 빌드에 맡긴다.
+def generateJni = tasks.register('generateMoulberryJni', Exec) {
+    workingDir file('source')
+    commandLine 'bash', './gradlew', '--no-configuration-cache', '--no-daemon',
+        '-I', file('generate-jni.gradle').absolutePath,
+        ":imgui-binding:generateAndroidJni",
+        "-PandroidJniOutput=${layout.buildDirectory.dir('generated/jni').get().asFile}"
+    inputs.dir file('source/imgui-binding/src/generated/java')
+    inputs.dir file('source/imgui-binding/src/main/native')
+    inputs.file file('generate-jni.gradle')
+    inputs.file file('source/patches/imgui-node-editor-imgui-1.92-operator-star.patch')
+    inputs.property 'sourceRevision', '4a2813430cc2bc64ba2106289d0c8606e656f32d'
+    outputs.dir layout.buildDirectory.dir('generated/jni')
+}
+
+tasks.configureEach {
+    if (name.startsWith('configureCMake') || name.startsWith('buildCMake')) {
+        dependsOn generateJni
+    }
+}

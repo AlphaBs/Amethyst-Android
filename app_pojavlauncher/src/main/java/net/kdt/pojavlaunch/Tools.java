@@ -510,6 +510,9 @@ public final class Tools {
         // imgui-java set library name to use. This because Axiom uses a fork with different library naming
         // logic that doesn't seem to appear in the main repository. I'm not gonna work with that.
         javaArgList.add("-Dimgui.library.name=imgui-java");
+        // Moulberry 1.92는 기존 ImGui 1.86과 ABI가 달라 전용 네이티브를 선택한다.
+        javaArgList.add("-Damethyst.imgui.moulberry92.path="
+                + Tools.NATIVE_LIB_DIR + "/libimgui-moulberry92.so");
         // We use an abomination to support all DH versions with a single library.
         javaArgList.add("-DZstdNativePath="+Tools.NATIVE_LIB_DIR+"/libzstd-jni-1.5.7-6-dhcompat.so");
         // We only ever reach this point when user has already used the force run switch
