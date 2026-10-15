@@ -657,14 +657,20 @@ public final class Tools {
         }
     }
 
-    public static File getGameDirPath(@NonNull MinecraftProfile minecraftProfile){
-        if(minecraftProfile.gameDir != null){
-            if(minecraftProfile.gameDir.startsWith(Tools.LAUNCHERPROFILES_RTPREFIX))
-                return new File(minecraftProfile.gameDir.replace(Tools.LAUNCHERPROFILES_RTPREFIX,Tools.DIR_GAME_HOME+"/"));
-            else
-                return new File(Tools.DIR_GAME_HOME,minecraftProfile.gameDir);
+    public static File getGameDirPath(@NonNull MinecraftProfile minecraftProfile) {
+        String path = minecraftProfile.gameDir;
+        if (path == null) {
+            return new File(Tools.DIR_GAME_NEW);
         }
-        return new File(Tools.DIR_GAME_NEW);
+        if (path.startsWith(Tools.LAUNCHERPROFILES_RTPREFIX)) {
+            return new File(path.replace(Tools.LAUNCHERPROFILES_RTPREFIX, Tools.DIR_GAME_HOME + "/"));
+        }
+        File directory = new File(path);
+        if (directory.isAbsolute()) {
+            // Android의 File(parent, child)는 절대 자식 경로에도 부모를 붙인다.
+            return directory;
+        }
+        return new File(Tools.DIR_GAME_HOME, path);
     }
 
     public static void buildNotificationChannel(Context context){
