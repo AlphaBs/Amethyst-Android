@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.runtime;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import java.io.File;
@@ -118,7 +119,18 @@ public final class AmethystRuntime {
         }
     }
 
+    public static boolean isGameRunning(Context context) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        java.util.List<ActivityManager.RunningAppProcessInfo> processes = manager.getRunningAppProcesses();
+        if (processes == null) return false;
+        for (ActivityManager.RunningAppProcessInfo process : processes) {
+            if (process.processName.equals(context.getPackageName() + ":game")) return true;
+        }
+        return false;
+    }
+
     public static void launchGame(Activity activity) {
-        activity.startActivity(new Intent(activity, MainActivity.class));
+        activity.startActivity(new Intent(activity, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
     }
 }
