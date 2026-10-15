@@ -1,0 +1,63 @@
+name: Android Skiko native libraries
+on:
+  push:
+    branches: [runtime-library]
+    paths:
+      - '.github/workflows/skiko-android.yml'
+      - 'scripts/skiko/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: skiko-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: Arm64
+            upstream_arch: arm64
+            abi: arm64-v8a
+          - arch: X64
+            upstream_arch: x64
+            abi: x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: JetBrains/skiko
+          ref: 2f621572270c28052549ff4678b762c3fea09fa5
+          path: skiko-upstream
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-31 build-tools;31.0.0 ndk;27.3.13750724'
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Repair Android static library linking
+        run: python3 scripts/skiko/patch-linker.py skiko-upstream
+      - name: Build matching Android JNI
+        env:
+          NATIVE_ARCH: ${{ matrix.arch }}
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.3.13750724"
+          bash skiko-upstream/gradlew -p skiko-upstream/skiko \
+            "linkJvmBindingsAndroid$NATIVE_ARCH" \
+            -Pskiko.android.enabled=true -Pskiko.awt.enabled=false \
+            -Pdeploy.version=0.9.22.2 --no-daemon --stacktrace
+      - name: Verify and package native library
+        env:
+          NATIVE_ARCH: ${{ matrix.upstream_arch }}
+          NATIVE_ABI: ${{ matrix.abi }}
+        run: python3 scripts/skiko/package-native.py skiko-upstream
+      - uses: actions/upload-artifact@v4
+        with:
+          name: skiko-0.9.22.2-${{ matrix.abi }}
+          path: skiko-native/
