@@ -1,6 +1,6 @@
 # External game natives
 
-Moulberry ImGui 90/92 sources and native builds are maintained in the public [prebuilt fork](https://github.com/NamuLauncher/amethyst-prebuilt-libraries/tree/codex/moulberry-natives). See its BUILD-IMGUI.md for pinned sources, rebuilding and licenses.
+Moulberry ImGui 90/92 sources and native builds are maintained in the public [namu-android-prebuilt-libraries repository](https://github.com/NamuLauncher/namu-android-prebuilt-libraries). See its BUILD.md for pinned sources, rebuilding and licenses.
 
 Place the required files in `<game>/native/<ABI>/*.so`. The launcher copies files from the current ABI directory to private `game-natives/<ABI>/` storage and loads that copy. It removes staged files that are absent from the current game folder. Nested folders are not scanned.
 
