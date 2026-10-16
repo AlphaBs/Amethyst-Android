@@ -24,7 +24,7 @@ Protocol references: [Microsoft device authorization](https://learn.microsoft.co
 
 `prepareGame` accepts separate `gameArguments` and `jvmArguments` arrays. Each array element is one argument; do not add shell quoting around paths with spaces. JVM arguments are copied into the saved profile so they reach the separate game process, and appended after generated defaults but before the main class and game arguments. Pass null or an empty array when no extra JVM options are needed.
 
-`gameNativeDirectory(Context)` returns the private native staging directory for the current ABI without copying files. Its final path component is the Android ABI name. A host can check the corresponding source file under `<game>/native/<ABI>/` and use the private destination in its JVM properties. External native staging remains in this runtime; Skiko filename selection, library-path and system-theme JVM properties are host policy.
+The host must place the game directory in app-internal storage, for example `Context.getFilesDir()/instances/<id>`. `gameNativeDirectory(File gameDirectory)` returns `<game>/native/<current ABI>`; files are loaded directly there without staging, copying or cleanup. JVM and Android linker search paths use that same game-specific directory. Its final path component is the Android ABI name. Skiko filename selection, library-path and system-theme JVM properties are host policy. Shared/external-storage game folders are outside this contract.
 
 ## Game preparation progress
 

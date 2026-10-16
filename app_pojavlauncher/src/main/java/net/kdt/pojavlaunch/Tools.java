@@ -71,7 +71,6 @@ import net.kdt.pojavlaunch.utils.DownloadUtils;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.utils.GLInfoUtils;
 import net.kdt.pojavlaunch.utils.JREUtils;
-import net.kdt.pojavlaunch.utils.GameNativeLibraries;
 import net.kdt.pojavlaunch.utils.JSONUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.utils.OldVersionsUtils;
@@ -481,11 +480,7 @@ public final class Tools {
         }
 
         File versionSpecificNativesDir = new File(Tools.DIR_CACHE, "natives/"+versionId);
-        File gameNativeDirectory = GameNativeLibraries.prepare(
-                gamedir,
-                new File(Tools.DIR_DATA),
-                archAsStringAndroid(DEVICE_ARCHITECTURE)
-        );
+        File gameNativeDirectory = getGameNativeDirectory(gamedir);
         Logger.appendToLog("Game native libraries: " + gameNativeDirectory);
         StringBuilder javaLibraryPath = new StringBuilder();
         javaLibraryPath.append(gameNativeDirectory.getAbsolutePath());
@@ -678,6 +673,11 @@ public final class Tools {
             };
             Logger.addLogListener(oldL4JMitigationLogListener);
         }
+    }
+
+    /** 게임 폴더는 앱 내부 저장소에 두고 네이티브를 복사 없이 사용한다. */
+    public static File getGameNativeDirectory(File gameDirectory) {
+        return new File(gameDirectory, "native/" + archAsStringAndroid(DEVICE_ARCHITECTURE));
     }
 
     public static File getGameDirPath(@NonNull MinecraftProfile minecraftProfile) {

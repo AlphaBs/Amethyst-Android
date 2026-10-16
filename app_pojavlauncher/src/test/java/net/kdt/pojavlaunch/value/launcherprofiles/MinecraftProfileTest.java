@@ -11,7 +11,7 @@ public class MinecraftProfileTest {
     public void hostJvmArgumentsSurviveProfilePersistenceWithoutSplittingPaths() {
         MinecraftProfile profile = new MinecraftProfile();
         profile.extraJvmArguments = new String[] {
-                "-Dskiko.library.path=/private files/game-natives/arm64-v8a",
+                "-Dskiko.library.path=/private files/instances/game/native/arm64-v8a",
                 "-Damethyst.android.systemTheme=dark"
         };
         Gson gson = new Gson();

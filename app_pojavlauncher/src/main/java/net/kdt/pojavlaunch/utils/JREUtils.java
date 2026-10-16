@@ -145,7 +145,7 @@ public class JREUtils {
 
     }
 
-    public static void relocateLibPath(Runtime runtime, String jreHome) {
+    public static void relocateLibPath(Runtime runtime, String jreHome, File gameDirectory) {
         String JRE_ARCHITECTURE = runtime.arch;
         if (Architecture.archAsInt(JRE_ARCHITECTURE) == ARCH_X86){
             JRE_ARCHITECTURE = "i386/i486/i586";
@@ -168,10 +168,7 @@ public class JREUtils {
                 .append("/jli:").append(jreHome).append("/").append(Tools.DIRNAME_HOME_JRE)
                 .append(":");
         // 같은 폴더의 다른 .so에 대한 네이티브 의존성도 찾을 수 있게 한다.
-        File gameNativeDirectory = new File(
-                Tools.DIR_DATA,
-                "game-natives/" + archAsStringAndroid(getDeviceArchitecture())
-        );
+        File gameNativeDirectory = Tools.getGameNativeDirectory(gameDirectory);
         ldLibraryPath.append(gameNativeDirectory.getAbsolutePath());
         ldLibraryPath.append(File.pathSeparator);
         ldLibraryPath.append("/system/").append(libName).append(":")
@@ -341,7 +338,11 @@ public class JREUtils {
     public static void launchJavaVM(final AppCompatActivity activity, final Runtime runtime, File gameDirectory, final List<String> JVMArgs, final String userArgsString) throws Throwable {
         String runtimeHome = MultiRTUtils.getRuntimeHome(runtime.name).getAbsolutePath();
 
-        JREUtils.relocateLibPath(runtime, runtimeHome);
+        File effectiveGameDirectory = gameDirectory;
+        if (effectiveGameDirectory == null) {
+            effectiveGameDirectory = new File(Tools.DIR_GAME_NEW);
+        }
+        JREUtils.relocateLibPath(runtime, runtimeHome, effectiveGameDirectory);
 
         setJavaEnvironment(activity, runtimeHome);
         final String graphicsLib = loadGraphicsLibrary();
@@ -419,7 +420,7 @@ public class JREUtils {
         initJavaRuntime(runtimeHome);
         JREUtils.setupExitMethod(activity.getApplication());
         JREUtils.initializeHooks();
-        chdir(gameDirectory == null ? Tools.DIR_GAME_NEW : gameDirectory.getAbsolutePath());
+        chdir(effectiveGameDirectory.getAbsolutePath());
         userArgs.add(0,"java"); //argv[0] is the program name according to C standard.
 
         final int exitCode = VMLauncher.launchJVM(userArgs.toArray(new String[0]));

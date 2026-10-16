@@ -9,7 +9,6 @@ import android.os.Looper;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-import net.kdt.pojavlaunch.Architecture;
 import net.kdt.pojavlaunch.MainActivity;
 import net.kdt.pojavlaunch.PojavApplication;
 import net.kdt.pojavlaunch.PojavProfile;
@@ -22,7 +21,6 @@ import net.kdt.pojavlaunch.tasks.AsyncAssetManager;
 import net.kdt.pojavlaunch.tasks.AsyncMinecraftDownloader;
 import net.kdt.pojavlaunch.tasks.AsyncVersionList;
 import net.kdt.pojavlaunch.tasks.MinecraftDownloader;
-import net.kdt.pojavlaunch.utils.GameNativeLibraries;
 import net.kdt.pojavlaunch.value.MinecraftAccount;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
@@ -116,13 +114,9 @@ public final class AmethystRuntime {
                 updated -> completion.onReady(), completion::onFailure);
     }
 
-    /** 현재 ABI의 내부 배치 경로를 반환한다. 실제 복사는 게임 실행 시 수행한다. */
-    public static File gameNativeDirectory(Context context) {
-        initialize(context);
-        return GameNativeLibraries.directory(
-                new File(Tools.DIR_DATA),
-                Architecture.archAsStringAndroid(Architecture.getDeviceArchitecture())
-        );
+    /** 앱 내부 게임 폴더에서 현재 ABI의 네이티브 경로를 반환한다. */
+    public static File gameNativeDirectory(File gameDirectory) {
+        return Tools.getGameNativeDirectory(gameDirectory);
     }
 
     public static void prepareGame(
