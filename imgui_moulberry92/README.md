@@ -14,8 +14,9 @@ is enabled; the optional FreeType backend is not included in this first build.
 The native library requests 16KB ELF segment alignment.
 
 The runtime passes `amethyst.imgui.moulberry92.path` to the game JVM.
-MioLibPatcher replaces only the desktop extraction call in the ImGui static
-initializer, so the original `System.load` and all subsequent JNI setup execute.
+MioLibPatcher redirects native load calls and desktop extraction in the ImGui
+static initializer to that version-specific file, preserving subsequent JNI setup.
+This takes precedence over the shared `imgui.library.name` setting.
 Without that property the original extraction behavior remains intact.
 
 Build the normal runtime with recursive submodules and JDK 17 (plus JDK 8 for

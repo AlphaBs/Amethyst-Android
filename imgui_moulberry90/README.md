@@ -12,8 +12,8 @@ is never edited. ImGui 1.90 and 1.92 have separate JNI packages and hidden
 C++ symbols, with local symbol binding to isolate their native state.
 
 The game JVM reads `amethyst.imgui.moulberry90.path` through MioLibPatcher.
-Only desktop extraction is replaced; the original System.load and JNI
-initialization remain. Place this library in `<game>/native/<ABI>/` alongside
+Native load calls and desktop extraction use that file when configured,
+overriding the shared `imgui.library.name`; subsequent JNI initialization remains. Place this library in `<game>/native/<ABI>/` alongside
 `libimgui-moulberry92.so`. The runtime stages both files into private storage.
 STB font rendering is enabled; FreeType is not included in this build.
 
