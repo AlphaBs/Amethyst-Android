@@ -133,9 +133,6 @@
         </service>
         <activity android:name=".runtime.RuntimeAccountActivity"
             android:exported="false" android:theme="@style/AppTheme" />
-        <activity android:name=".runtime.RuntimeDeviceCodeActivity"
-            android:exported="false"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode" />
     </application>
     <queries>
         <package android:name="net.kdt.pojavlaunch.ffmpeg"/>

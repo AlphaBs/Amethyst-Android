@@ -70,8 +70,27 @@ public final class AmethystRuntime {
         activity.startActivity(new Intent(activity, RuntimeAccountActivity.class));
     }
 
-    public static void openDeviceCodeAccount(Activity activity) {
-        activity.startActivity(new Intent(activity, RuntimeDeviceCodeActivity.class));
+    public interface LoginRequest {
+        void cancel();
+    }
+
+    public interface DeviceCodeListener extends Completion {
+        void onCode(String userCode, String verificationUri, int expiresInSeconds);
+        void onAuthenticating();
+    }
+
+    /** UI는 호스트가 소유하며 콜백은 메인 스레드에서 전달한다. */
+    public static LoginRequest startDeviceCodeLogin(
+            Context context,
+            DeviceCodeListener listener
+    ) {
+        initialize(context);
+        RuntimeDeviceCodeLogin request = new RuntimeDeviceCodeLogin(
+                context.getApplicationContext(),
+                listener
+        );
+        request.start();
+        return request;
     }
 
     public static void refreshAccount(Activity activity, Completion completion) {
