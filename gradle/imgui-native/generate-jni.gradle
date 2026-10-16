@@ -73,7 +73,8 @@ gradle.projectsEvaluated {
 
             if (generation == '90') {
                 // Flashback은 원본 imgui 패키지를 moulberry90으로 재배치한 바인딩을 사용한다.
-                binding.fileTree(output).matching {
+                binding.fileTree(output)
+                        .matching {
                     include '**/*.cpp', '**/*.h'
                 }.each { source ->
                     def text = source.getText('UTF-8')
