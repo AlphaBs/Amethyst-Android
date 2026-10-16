@@ -9,7 +9,7 @@
 	url = https://github.com/libsdl-org/sdl2-compat.git
 [submodule "MioLibPatcher"]
 	path = MioLibPatcher
-	url = https://github.com/AlphaBs/MioLibPatcher.git
+	url = https://github.com/NamuLauncher/MioLibPatcher.git
 [submodule "androidnsbypass"]
 	path = androidnsbypass
 	url = https://github.com/alexytomi/androidnsbypass.git
