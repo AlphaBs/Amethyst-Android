@@ -19,6 +19,7 @@ import net.kdt.pojavlaunch.JMinecraftVersionList;
 import net.kdt.pojavlaunch.NewJREUtil;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.runtime.GamePreparationProgress;
 import net.kdt.pojavlaunch.mirrors.DownloadMirror;
 import net.kdt.pojavlaunch.mirrors.MirrorTamperedException;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
@@ -42,6 +43,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class MinecraftDownloader {
     private static final double ONE_MEGABYTE = (1024d * 1024d);
@@ -63,6 +65,7 @@ public class MinecraftDownloader {
 
     private boolean isLocalProfile = false;
     private boolean isOnline;
+    private Consumer<GamePreparationProgress> hostProgress = progress -> {};
 
     /**
      * Start the game version download process on the global executor service.
@@ -120,8 +123,13 @@ public class MinecraftDownloader {
     }
 
     /** 호스트가 선택한 실행 모드의 게임 파일을 준비한다. */
-    public void startForHost(Activity activity, String version,
-                             AsyncMinecraftDownloader.DoneListener listener) {
+    public void startForHost(
+            Activity activity,
+            String version,
+            Consumer<GamePreparationProgress> progress,
+            AsyncMinecraftDownloader.DoneListener listener
+    ) {
+        hostProgress = progress;
         Tools.switchDemo(Tools.isDemoProfile(activity));
         sExecutorService.execute(() -> {
             try {
@@ -147,6 +155,7 @@ public class MinecraftDownloader {
         // Put up a dummy progress line, for the activity to start the service and do all the other necessary
         // work to keep the launcher alive. We will replace this line when we will start downloading stuff.
         ProgressLayout.setProgress(ProgressLayout.DOWNLOAD_MINECRAFT, 0, R.string.newdl_starting);
+        reportUnknown(GamePreparationProgress.Stage.METADATA);
         SpeedCalculator speedCalculator = new SpeedCalculator();
 
         mTargetJarFile = createGameJarPath(versionName);
@@ -161,7 +170,7 @@ public class MinecraftDownloader {
         downloadAndProcessMetadata(activity, verInfo, versionName);
 
         ArrayBlockingQueue<Runnable> taskQueue =
-                new ArrayBlockingQueue<>(mScheduledDownloadTasks.size(), false);
+                new ArrayBlockingQueue<>(Math.max(1, mScheduledDownloadTasks.size()), false);
         ThreadPoolExecutor downloaderPool =
                 new ThreadPoolExecutor(4, 4, 500, TimeUnit.MILLISECONDS, taskQueue);
 
@@ -170,17 +179,18 @@ public class MinecraftDownloader {
         for(DownloaderTask scheduledTask : mScheduledDownloadTasks) downloaderPool.execute(scheduledTask);
         downloaderPool.shutdown();
 
+        reportDownloadProgress(0);
         try {
             while (mDownloaderThreadException.get() == null &&
                     !downloaderPool.awaitTermination(33, TimeUnit.MILLISECONDS)) {
                 double speed = speedCalculator.feed(mInternetUsageCounter.get()) / ONE_MEGABYTE;
-                if(mUseFileCounter) reportProgressFileCounter(speed);
-                else reportProgressSizeCounter(speed);
+                reportDownloadProgress(speed);
             }
             Exception thrownException = mDownloaderThreadException.get();
             if(thrownException != null) {
                 throw thrownException;
             } else {
+                reportDownloadProgress(0);
                 ensureJarFileCopy();
                 extractNatives(versionName);
             }
@@ -191,9 +201,35 @@ public class MinecraftDownloader {
         }
     }
 
+    private void reportUnknown(GamePreparationProgress.Stage stage) {
+        hostProgress.accept(new GamePreparationProgress(
+                stage,
+                GamePreparationProgress.Unit.UNKNOWN,
+                0,
+                -1
+        ));
+    }
+
+    private void reportDownloadProgress(double speed) {
+        if (mUseFileCounter) {
+            reportProgressFileCounter(speed);
+        } else {
+            reportProgressSizeCounter(speed);
+        }
+    }
+
     private void reportProgressFileCounter(double speed) {
         long dlFileCounter = mProcessedFileCounter.get();
-        int progress = (int)((dlFileCounter * 100L) / mTotalFileCount);
+        int progress = 0;
+        if (mTotalFileCount > 0) {
+            progress = (int) ((dlFileCounter * 100L) / mTotalFileCount);
+        }
+        hostProgress.accept(new GamePreparationProgress(
+                GamePreparationProgress.Stage.GAME_FILES,
+                GamePreparationProgress.Unit.ITEMS,
+                dlFileCounter,
+                mTotalFileCount
+        ));
         ProgressLayout.setProgress(ProgressLayout.DOWNLOAD_MINECRAFT, progress,
                 R.string.newdl_downloading_game_files, dlFileCounter,
                 mTotalFileCount, speed);
@@ -203,7 +239,16 @@ public class MinecraftDownloader {
         long dlFileSize = mProcessedSizeCounter.get();
         double dlSizeMegabytes = (double) dlFileSize / ONE_MEGABYTE;
         double dlTotalMegabytes = (double) mTotalSize / ONE_MEGABYTE;
-        int progress = (int)((dlFileSize * 100L) / mTotalSize);
+        int progress = 0;
+        if (mTotalSize > 0) {
+            progress = (int) ((dlFileSize * 100L) / mTotalSize);
+        }
+        hostProgress.accept(new GamePreparationProgress(
+                GamePreparationProgress.Stage.GAME_FILES,
+                GamePreparationProgress.Unit.BYTES,
+                dlFileSize,
+                mTotalSize
+        ));
         ProgressLayout.setProgress(ProgressLayout.DOWNLOAD_MINECRAFT, progress,
                 R.string.newdl_downloading_game_files_size, dlSizeMegabytes, dlTotalMegabytes, speed);
     }
@@ -233,6 +278,7 @@ public class MinecraftDownloader {
     private void extractNatives(String versionName) throws IOException {
         if(mDeclaredNatives.isEmpty()) return;
         int totalCount = mDeclaredNatives.size();
+        reportNativeExtraction(0, totalCount);
 
         ProgressLayout.setProgress(ProgressLayout.DOWNLOAD_MINECRAFT, 0,
                 R.string.newdl_extracting_native_libraries, 0, totalCount);
@@ -244,9 +290,19 @@ public class MinecraftDownloader {
         for(File source : mDeclaredNatives) {
             nativesExtractor.extractFromAar(source);
             extractedCount++;
+            reportNativeExtraction(extractedCount, totalCount);
             ProgressLayout.setProgress(ProgressLayout.DOWNLOAD_MINECRAFT, extractedCount * 100 / totalCount,
                     R.string.newdl_extracting_native_libraries, extractedCount, totalCount);
         }
+    }
+
+    private void reportNativeExtraction(int completed, int total) {
+        hostProgress.accept(new GamePreparationProgress(
+                GamePreparationProgress.Stage.NATIVE_LIBRARIES,
+                GamePreparationProgress.Unit.ITEMS,
+                completed,
+                total
+        ));
     }
 
     private File downloadGameJson(JMinecraftVersionList.Version verInfo) throws IOException, MirrorTamperedException {
@@ -298,6 +354,7 @@ public class MinecraftDownloader {
      * @throws IOException if the download of any of the metadata files fails
      */
     private boolean downloadAndProcessMetadata(Activity activity, JMinecraftVersionList.Version verInfo, String versionName) throws IOException, MirrorTamperedException {
+        reportUnknown(GamePreparationProgress.Stage.METADATA);
         File versionJsonFile;
         if(verInfo != null) versionJsonFile = downloadGameJson(verInfo);
         else versionJsonFile = createGameJsonPath(versionName);
@@ -307,9 +364,13 @@ public class MinecraftDownloader {
             throw new IOException("Unable to read Version JSON for version " + versionName);
         }
 
-        if(activity != null && !NewJREUtil.installNewJreIfNeeded(activity, verInfo)){
-            throw new RuntimeException(activity.getString(R.string.exception_failed_to_unpack_jre17));
+        if (activity != null) {
+            reportUnknown(GamePreparationProgress.Stage.JAVA_RUNTIME);
+            if (!NewJREUtil.installNewJreIfNeeded(activity, verInfo)) {
+                throw new RuntimeException(activity.getString(R.string.exception_failed_to_unpack_jre17));
+            }
         }
+        reportUnknown(GamePreparationProgress.Stage.METADATA);
 
         JAssets assets = downloadAssetsIndex(verInfo);
         if(assets != null) scheduleAssetDownloads(assets);

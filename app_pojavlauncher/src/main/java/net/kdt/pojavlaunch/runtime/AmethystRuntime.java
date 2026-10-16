@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -30,6 +32,10 @@ public final class AmethystRuntime {
     public interface Completion {
         void onReady();
         void onFailure(Throwable failure);
+    }
+
+    public interface PreparationListener extends Completion {
+        void onProgress(GamePreparationProgress progress);
     }
 
     private AmethystRuntime() {}
@@ -127,8 +133,13 @@ public final class AmethystRuntime {
             int memoryMb,
             String[] gameArguments,
             String[] jvmArguments,
-            Completion completion
+            PreparationListener listener
     ) {
+        Handler main = new Handler(Looper.getMainLooper());
+        PreparationCallbacks callbacks = new PreparationCallbacks(
+                action -> main.post(action),
+                listener
+        );
         try {
             initialize(activity);
             if (!directory.isDirectory() && !directory.mkdirs()) {
@@ -159,27 +170,43 @@ public final class AmethystRuntime {
             LauncherPreferences.loadPreferences(activity);
             PojavApplication.sExecutorService.execute(() -> {
                 try {
-                    AsyncAssetManager.prepareForHost(activity);
+                    AsyncAssetManager.prepareForHost(activity, callbacks::progress);
+                    callbacks.progress(new GamePreparationProgress(
+                            GamePreparationProgress.Stage.VERSION_LIST,
+                            GamePreparationProgress.Unit.UNKNOWN,
+                            0,
+                            -1
+                    ));
                     new AsyncVersionList().getVersionList(versions -> {
                         if (versions == null) {
-                            completion.onFailure(new IllegalStateException("Cannot load Minecraft versions"));
+                            callbacks.failure(new IllegalStateException("Cannot load Minecraft versions"));
                             return;
                         }
                         ExtraCore.setValue(ExtraConstants.RELEASE_TABLE, versions);
-                        new MinecraftDownloader().startForHost(activity, version,
+                        MinecraftDownloader downloader = new MinecraftDownloader();
+                        downloader.startForHost(
+                                activity,
+                                version,
+                                callbacks::progress,
                                 new AsyncMinecraftDownloader.DoneListener() {
-                            @Override public void onDownloadDone() { completion.onReady(); }
-                            @Override public void onDownloadFailed(Throwable failure) {
-                                completion.onFailure(failure);
-                            }
-                        });
+                                    @Override
+                                    public void onDownloadDone() {
+                                        callbacks.ready();
+                                    }
+
+                                    @Override
+                                    public void onDownloadFailed(Throwable failure) {
+                                        callbacks.failure(failure);
+                                    }
+                                }
+                        );
                     }, false);
                 } catch (Throwable failure) {
-                    completion.onFailure(failure);
+                    callbacks.failure(failure);
                 }
             });
         } catch (Throwable failure) {
-            completion.onFailure(failure);
+            callbacks.failure(failure);
         }
     }
 

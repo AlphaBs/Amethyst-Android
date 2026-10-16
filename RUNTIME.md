@@ -25,3 +25,11 @@ Protocol references: [Microsoft device authorization](https://learn.microsoft.co
 `prepareGame` accepts separate `gameArguments` and `jvmArguments` arrays. Each array element is one argument; do not add shell quoting around paths with spaces. JVM arguments are copied into the saved profile so they reach the separate game process, and appended after generated defaults but before the main class and game arguments. Pass null or an empty array when no extra JVM options are needed.
 
 `gameNativeDirectory(Context)` returns the private native staging directory for the current ABI without copying files. Its final path component is the Android ABI name. A host can check the corresponding source file under `<game>/native/<ABI>/` and use the private destination in its JVM properties. External native staging remains in this runtime; Skiko filename selection, library-path and system-theme JVM properties are host policy.
+
+## Game preparation progress
+
+`prepareGame` accepts a `PreparationListener` with `onProgress(GamePreparationProgress)`, `onReady()` and `onFailure(Throwable)`. All three callbacks run on the main thread. Progress belongs to one request; it stops after the first terminal callback. Hosts own status text and progress UI.
+
+Progress has a `stage`, `unit`, `completed` and `total`. Stages cover bundled components, the version list, metadata, Java runtime preparation, game files and native extraction. Units are `ITEMS`, `BYTES` or `UNKNOWN`; `total = -1` means no measurable total is available. These are per-stage counters, not an overall completion percentage. Java runtime preparation and metadata currently report indeterminate progress. Game-file counters include existing verified files as well as downloads; they are not network usage counters. Unknown-size game downloads fall back to item counts. A completed preparation can immediately launch the game without waiting for an artificial 100% event.
+
+Upstream launcher progress reporting remains supported. Host progress is wired directly through the preparation tasks and does not subscribe to global UI progress events. Progress callbacks do not add cancellation support to `prepareGame`.

@@ -17,6 +17,7 @@ import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.runtime.GamePreparationProgress;
 
 import org.apache.commons.io.FileUtils;
 
@@ -24,6 +25,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.function.Consumer;
 
 public class AsyncAssetManager {
 
@@ -113,18 +115,44 @@ public class AsyncAssetManager {
     // Piggybacks off of the java modules extracting later to use their version files for update checks
     // This is indeed prone to breaking.
     /** 호스트가 게임 실행 전에 필요한 구성 요소를 동기적으로 준비한다. */
-    public static void prepareForHost(Context context) throws IOException {
+    public static void prepareForHost(
+            Context context,
+            Consumer<GamePreparationProgress> progress
+    ) throws IOException {
+        int completed = 0;
+        int total = 11;
+        reportComponents(progress, completed, total);
         Tools.copyAssetFile(context, "default.json", Tools.CTRLMAP_PATH, false);
+        reportComponents(progress, ++completed, total);
         Tools.copyAssetFile(context, "resolv.conf", Tools.DIR_DATA, false);
-        unpackComponent(context, "caciocavallo", false);
-        unpackComponent(context, "caciocavallo17", false);
+        reportComponents(progress, ++completed, total);
+        for (String component : new String[] {"caciocavallo", "caciocavallo17"}) {
+            unpackComponent(context, component, false);
+            reportComponents(progress, ++completed, total);
+        }
         unpackLwjglNatives(context);
-        unpackComponent(context, "lwjgl3/3.3.3", false);
-        unpackComponent(context, "lwjgl3/3.4.1", false);
-        unpackComponent(context, "security", true);
-        unpackComponent(context, "arc_dns_injector", true);
-        unpackComponent(context, "MioLibPatcher", true);
-        unpackComponent(context, "forge_installer", true);
+        reportComponents(progress, ++completed, total);
+        for (String component : new String[] {"lwjgl3/3.3.3", "lwjgl3/3.4.1"}) {
+            unpackComponent(context, component, false);
+            reportComponents(progress, ++completed, total);
+        }
+        for (String component : new String[] {"security", "arc_dns_injector", "MioLibPatcher", "forge_installer"}) {
+            unpackComponent(context, component, true);
+            reportComponents(progress, ++completed, total);
+        }
+    }
+
+    private static void reportComponents(
+            Consumer<GamePreparationProgress> progress,
+            int completed,
+            int total
+    ) {
+        progress.accept(new GamePreparationProgress(
+                GamePreparationProgress.Stage.COMPONENTS,
+                GamePreparationProgress.Unit.ITEMS,
+                completed,
+                total
+        ));
     }
 
     private static void unpackLwjglNatives(Context ctx) throws IOException {
