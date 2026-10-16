@@ -29,3 +29,4 @@ include ':androidnsbypass'
 project(":androidnsbypass").buildFileName = "../gradle/androidnsbypass.gradle"
 
 include ':imgui_moulberry92'
+include ':imgui_moulberry90'

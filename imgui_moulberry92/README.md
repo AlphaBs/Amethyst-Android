@@ -6,7 +6,7 @@ All 4,000 native method declarations match that tag. The existing Amethyst
 `libimgui-java.so` is ImGui 1.86 and cannot substitute for this ABI.
 
 The pinned upstream submodule and its pinned extensions provide the sources.
-`generate-jni.gradle` invokes the original JNI generator without editing
+`gradle/imgui-native/generate-jni.gradle` invokes the original JNI generator without editing
 upstream generated Java, applies the upstream extension patch, and copies
 native sources with the upstream `imconfig.h`. Android CMake then builds
 `libimgui-moulberry92.so` for the selected runtime ABIs. STB font rendering
@@ -24,5 +24,6 @@ Android builds and device validation are required to confirm functionality;
 matching JNI signatures alone does not prove rendering or input compatibility.
 
 Upstream MIT notices remain in the source tree. The binding notice is included
-in this AAR's assets. Existing ImGui 1.86 and this version have separate file
-names and JNI package names; Flashback's `moulberry90` is not redirected here.
+in this AAR's assets. ImGui 1.86, this version, and Flashback's separate 1.90 library use distinct
+file names and JNI packages. Hidden C++ visibility and local symbol binding
+keep each native context independent when both Moulberry libraries are loaded.

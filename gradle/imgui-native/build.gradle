@@ -1,0 +1,56 @@
+def generation = project.ext.imguiGeneration.toString()
+def generatedJni = layout.buildDirectory.dir('generated/jni')
+def generatedJniPath = generatedJni.get().asFile.absolutePath
+def sharedBuild = rootProject.file('gradle/imgui-native')
+def runtimeAbis = providers
+    .gradleProperty('runtimeAbis')
+    .getOrElse('arm64-v8a,x86_64')
+    .split(',')
+
+android {
+    namespace "org.angelauramc.imgui.moulberry${generation}"
+    compileSdk 35
+    ndkVersion '27.3.13750724'
+
+    defaultConfig {
+        minSdk 26
+        ndk {
+            abiFilters.addAll(runtimeAbis)
+        }
+        externalNativeBuild {
+            cmake {
+                arguments "-DIMGUI_JNI_DIR=${generatedJniPath}",
+                    "-DIMGUI_NATIVE_NAME=imgui-moulberry${generation}"
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path new File(sharedBuild, 'CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+}
+
+// 두 버전의 소스는 분리하되 같은 생성·NDK 빌드 절차를 사용한다.
+def generateJni = tasks.register('generateMoulberryJni', Exec) {
+    workingDir file('source')
+    commandLine 'bash', './gradlew', '--no-configuration-cache', '--no-daemon',
+        '-I', new File(sharedBuild, 'generate-jni.gradle').absolutePath,
+        ':imgui-binding:generateAndroidJni',
+        "-PandroidJniOutput=${generatedJniPath}",
+        "-PandroidImguiGeneration=${generation}"
+    inputs.dir file('source/imgui-binding/src/generated/java')
+    inputs.dir file('source/imgui-binding/src/main/native')
+    inputs.dir file('source/include')
+    inputs.files fileTree('source/patches')
+    inputs.dir sharedBuild
+    inputs.property 'generation', generation
+    outputs.dir generatedJni
+}
+
+tasks.configureEach {
+    if (name.startsWith('configureCMake') || name.startsWith('buildCMake')) {
+        dependsOn generateJni
+    }
+}
