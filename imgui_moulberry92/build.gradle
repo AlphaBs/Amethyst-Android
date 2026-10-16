@@ -1,6 +1,0 @@
-plugins {
-    id 'com.android.library'
-}
-
-ext.imguiGeneration = 92
-apply from: rootProject.file('gradle/imgui-native/build.gradle')

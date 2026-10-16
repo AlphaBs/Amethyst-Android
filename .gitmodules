@@ -13,9 +13,3 @@
 [submodule "androidnsbypass"]
 	path = androidnsbypass
 	url = https://github.com/alexytomi/androidnsbypass.git
-[submodule "imgui_moulberry92/source"]
-	path = imgui_moulberry92/source
-	url = https://github.com/Moulberry/imgui-java.git
-[submodule "imgui_moulberry90/source"]
-	path = imgui_moulberry90/source
-	url = https://github.com/Moulberry/imgui-java.git

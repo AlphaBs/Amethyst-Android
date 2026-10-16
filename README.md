@@ -13,6 +13,8 @@ Amethyst is a launcher that allows you to play Minecraft: Java Edition on your A
 
 For more details, check out our [wiki](https://wiki.angelauramc.dev)!
 
+See [EXTERNAL-NATIVES.md](EXTERNAL-NATIVES.md) for this fork's external ImGui native library setup.
+
 ## Table of Contents
 
 * [Introduction](#introduction)
