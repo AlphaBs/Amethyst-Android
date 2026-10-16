@@ -503,33 +503,6 @@ public final class Tools {
         }
         javaArgList.add("-Djava.library.path="+javaLibraryPath);
 
-        String skikoArchitecture = null;
-        if (DEVICE_ARCHITECTURE == Architecture.ARCH_ARM64) {
-            skikoArchitecture = "arm64";
-        } else if (DEVICE_ARCHITECTURE == Architecture.ARCH_X86_64) {
-            skikoArchitecture = "x64";
-        }
-        if (skikoArchitecture != null) {
-            File skikoLibrary = new File(
-                    gameNativeDirectory,
-                    "libskiko-linux-" + skikoArchitecture + ".so"
-            );
-            if (skikoLibrary.isFile()) {
-                // AWT 바인딩의 리소스 추출 대신 Android용 외부 네이티브를 선택한다.
-                javaArgList.add("-Dskiko.library.path=" + gameNativeDirectory.getAbsolutePath());
-                int nightMode = activity.getResources().getConfiguration().uiMode
-                        & Configuration.UI_MODE_NIGHT_MASK;
-                String systemTheme = "unknown";
-                if (nightMode == Configuration.UI_MODE_NIGHT_YES) {
-                    systemTheme = "dark";
-                } else if (nightMode == Configuration.UI_MODE_NIGHT_NO) {
-                    systemTheme = "light";
-                }
-                javaArgList.add("-Damethyst.android.systemTheme=" + systemTheme);
-                Logger.appendToLog("Skiko native: " + skikoLibrary);
-            }
-        }
-
         javaArgList.addAll(Arrays.asList(getMinecraftJVMArgs(versionId, gamedir)));
         javaArgList.add("-cp"); javaArgList.add(launchClasspath);
 
@@ -589,6 +562,10 @@ public final class Tools {
         }
         // We use a janky lwjgl setup. We don't want more people complaining it crashes.
         if (hasSodiumMod) javaArgList.add("-Dsodium.checks.issue2561=false");
+        // 호스트 JVM 옵션은 기본 옵션 뒤, 메인 클래스와 게임 인자 앞에 둔다.
+        if (minecraftProfile.extraJvmArguments != null) {
+            java.util.Collections.addAll(javaArgList, minecraftProfile.extraJvmArguments);
+        }
         javaArgList.add(versionInfo.mainClass);
         javaArgList.addAll(Arrays.asList(launchArgs));
         // ctx.appendlnToLog("full args: "+javaArgList.toString());

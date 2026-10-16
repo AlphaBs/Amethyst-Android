@@ -13,6 +13,10 @@ public final class GameNativeLibraries {
     private GameNativeLibraries() {
     }
 
+    public static File directory(File privateDirectory, String abi) {
+        return new File(privateDirectory, "game-natives/" + abi);
+    }
+
     public static File prepare(
             File gameDirectory,
             File privateDirectory,
@@ -32,7 +36,7 @@ public final class GameNativeLibraries {
         Arrays.sort(libraries, Comparator.comparing(File::getName));
 
         // 공유 저장소의 파일을 직접 실행 매핑하지 않고 앱 내부 복사본을 사용한다.
-        File destinationDirectory = new File(privateDirectory, "game-natives/" + abi);
+        File destinationDirectory = directory(privateDirectory, abi);
         Files.createDirectories(destinationDirectory.toPath());
         Set<String> currentNames = new HashSet<>();
         for (File source : libraries) {

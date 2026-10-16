@@ -19,3 +19,9 @@ This uses the existing upstream Xbox OAuth client ID and scope with `login.live.
 The worker respects the server interval, adds five seconds after `slow_down`, backs off on connection timeout, and stops on expiry, denial or cancellation. Cancelling the request stops polling and suppresses subsequent callbacks. No Device Code Activity or UI is provided by this library. Codes/tokens and token request bodies are not logged. The displayed code is transient and is never stored in the account file. Unit tests use a local HTTP server and a virtual clock, without real accounts.
 
 Protocol references: [Microsoft device authorization](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code), [RFC 8628](https://www.rfc-editor.org/rfc/rfc8628#section-3.5).
+
+## Host JVM arguments
+
+`prepareGame` accepts separate `gameArguments` and `jvmArguments` arrays. Each array element is one argument; do not add shell quoting around paths with spaces. JVM arguments are copied into the saved profile so they reach the separate game process, and appended after generated defaults but before the main class and game arguments. Pass null or an empty array when no extra JVM options are needed.
+
+`gameNativeDirectory(Context)` returns the private native staging directory for the current ABI without copying files. Its final path component is the Android ABI name. A host can check the corresponding source file under `<game>/native/<ABI>/` and use the private destination in its JVM properties. External native staging remains in this runtime; Skiko filename selection, library-path and system-theme JVM properties are host policy.
